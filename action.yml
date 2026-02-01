@@ -30,15 +30,12 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Create temporary folder
-      shell: bash
-      run: echo "CCPMBUILD_TMP=$(mktemp -d)" >> "$GITHUB_ENV"
-
     - name: Copy source file into temporary folder
       shell: bash
       run: |
-        cp "${{ inputs.source-path }}/manifest.json" "$CCPMBUILD_TMP/"
-        cp -r "${{ inputs.source-path }}/packages" "$CCPMBUILD_TMP/packages"
+        mkdir -p ${{ runner.temp }}/ccpmbuild
+        cp "${{ inputs.source-path }}/manifest.json" ${{ runner.temp }}/ccpmbuild/manifest.json
+        cp -r "${{ inputs.source-path }}/packages" ${{ runner.temp }}/ccpmbuild/packages
 
     - name: Recreate branch
       shell: bash
@@ -50,7 +47,9 @@ runs:
     - name: Checkout branch
       shell: bash
       if: ${{ inputs.keep || inputs.keep-history }}
-      run: git checkout origin/${{ inputs.branch-name }} || (git checkout --orphan ${{ inputs.branch-name }} && git rm -rf .)
+      run: |
+        echo "${{ inputs.keep || inputs.keep-history }} ${{ inputs.keep }} ${{ inputs.keep-history }}"
+        (git pull origin dist && git checkout origin/${{ inputs.branch-name }}) || (git checkout --orphan ${{ inputs.branch-name }} && git rm -rf .)
 
     - name: Clear branch
       shell: bash
@@ -60,18 +59,18 @@ runs:
     - name: Move the source files
       shell: bash
       run: |
-        cp -r "$CCPMBUILD_TMP/*" .
-        rm -rf "$CCPMBUILD_TMP"
+        cp -r ${{ runner.temp }}/ccpmbuild/* .
+        rm -rf ${{ runner.temp }}/ccpmbuild
 
     - name: Build the packages
       if: ${{ !inputs.minify }}
-      uses: docker://gcr.io/deleranax/ccpmbuild:v0.1.0
+      uses: docker://ghcr.io/deleranax/ccpmbuild:v0.1.0
       with:
         args: build /github/workspace /github/workspace
 
     - name: Build the packages (minify)
       if: ${{ inputs.minify }}
-      uses: docker://gcr.io/deleranax/ccpmbuild:v0.1.0
+      uses: docker://ghcr.io/deleranax/ccpmbuild:v0.1.0
       with:
         args: build --minify /github/workspace /github/workspace
 
