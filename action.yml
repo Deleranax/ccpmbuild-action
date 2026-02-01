@@ -39,7 +39,7 @@ runs:
 
     - name: Recreate branch
       shell: bash
-      if: ${{ (!inputs.keep) && (!inputs.keep-history) }}
+      if: ${{ !(inputs.keep || inputs.keep-history) }}
       run: |
         git checkout --orphan ${{ inputs.branch-name }}
         git rm -rf .
@@ -51,7 +51,7 @@ runs:
 
     - name: Clear branch
       shell: bash
-      if: ${{ (!inputs.keep) && inputs.keep-history }}
+      if: ${{ !inputs.keep && inputs.keep-history }}
       run: rm -rf ./*
 
     - name: Move the source files
@@ -62,13 +62,13 @@ runs:
 
     - name: Build the packages
       if: ${{ !inputs.minify }}
-      uses: docker://ghcr.io/deleranax/ccpmbuild:v0.1.1
+      uses: docker://ghcr.io/deleranax/ccpmbuild:v0.1.2
       with:
         args: build /github/workspace /github/workspace
 
     - name: Build the packages (minify)
       if: ${{ inputs.minify }}
-      uses: docker://ghcr.io/deleranax/ccpmbuild:v0.1.1
+      uses: docker://ghcr.io/deleranax/ccpmbuild:v0.1.2
       with:
         args: build --minify /github/workspace /github/workspace
 
