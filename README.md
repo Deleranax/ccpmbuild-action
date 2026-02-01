@@ -30,7 +30,7 @@ jobs:
           fetch-depth: 0
 
       - name: Build CCPM repository
-        uses: deleranax/ccpmbuild-action@v1
+        uses: deleranax/ccpmbuild-action@v0
 ```
 
 ### Advanced Example
@@ -56,7 +56,7 @@ jobs:
           fetch-depth: 0
 
       - name: Build CCPM repository
-        uses: deleranax/ccpmbuild-action@v1
+        uses: deleranax/ccpmbuild-action@v0
         with:
           minify: 'true'
           source-path: '.'
