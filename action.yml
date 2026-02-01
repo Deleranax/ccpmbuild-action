@@ -62,13 +62,13 @@ runs:
 
     - name: Build the packages
       if: ${{ !inputs.minify }}
-      uses: docker://ghcr.io/deleranax/ccpmbuild:v0.1.2
+      uses: docker://ghcr.io/deleranax/ccpmbuild:v0.1.3
       with:
         args: build /github/workspace /github/workspace
 
     - name: Build the packages (minify)
       if: ${{ inputs.minify }}
-      uses: docker://ghcr.io/deleranax/ccpmbuild:v0.1.2
+      uses: docker://ghcr.io/deleranax/ccpmbuild:v0.1.3
       with:
         args: build --minify /github/workspace /github/workspace
 
