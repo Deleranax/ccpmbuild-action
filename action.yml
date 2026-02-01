@@ -1,0 +1,90 @@
+name: Build CCPM Repository
+description: Easily build and host a CCPM repository on GitHub
+
+branding:
+  icon: package
+  color: green
+
+inputs:
+  minify:
+    description: "If the packages source should be minified"
+    required: false
+    default: "true"
+  source-path:
+    description: "The repository source path, containing the 'manifest.json' file and 'packages' directory"
+    required: false
+    default: "."
+  branch-name:
+    description: "The repository distribution branch, that will contain the 'manifest.json' file and 'pool' directory"
+    required: false
+    default: "dist"
+  keep:
+    description: "If the old packages versions should be kept"
+    required: false
+    default: "false"
+  keep-history:
+    description: "If the branch should maintain history (one commit per build)"
+    required: false
+    default: "false"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Create temporary folder
+      shell: bash
+      run: echo "CCPMBUILD_TMP=$(mktemp -d)" >> "$GITHUB_ENV"
+
+    - name: Copy source file into temporary folder
+      shell: bash
+      run: |
+        cp "${{ inputs.source-path }}/manifest.json" "$CCPMBUILD_TMP/"
+        cp -r "${{ inputs.source-path }}/packages" "$CCPMBUILD_TMP/packages"
+
+    - name: Recreate branch
+      shell: bash
+      if: ${{ !inputs.keep && !inputs.keep-history }}
+      run: |
+        git checkout --orphan ${{ inputs.branch-name }}
+        git rm -rf .
+
+    - name: Checkout branch
+      shell: bash
+      if: ${{ inputs.keep || inputs.keep-history }}
+      run: git checkout origin/${{ inputs.branch-name }} || (git checkout --orphan ${{ inputs.branch-name }} && git rm -rf .)
+
+    - name: Clear branch
+      shell: bash
+      if: ${{ !inputs.keep && inputs.keep-history }}
+      run: rm -rf ./*
+
+    - name: Move the source files
+      shell: bash
+      run: |
+        cp -r "$CCPMBUILD_TMP/*" .
+        rm -rf "$CCPMBUILD_TMP"
+
+    - name: Build the packages
+      if: ${{ !inputs.minify }}
+      uses: docker://gcr.io/deleranax/ccpmbuild:v0.1.0
+      with:
+        args: build /github/workspace /github/workspace
+
+    - name: Build the packages (minify)
+      if: ${{ inputs.minify }}
+      uses: docker://gcr.io/deleranax/ccpmbuild:v0.1.0
+      with:
+        args: build --minify /github/workspace /github/workspace
+
+    - name: Clear source files
+      shell: bash
+      run: rm -rf ./packages
+
+    - name: Commit changes
+      shell: bash
+      run: |
+        git add .
+        git commit -m "Build packages from ${{ github.sha }}"
+
+    - name: Push changes
+      shell: bash
+      run: git push -f origin ${{ inputs.branch-name }}
